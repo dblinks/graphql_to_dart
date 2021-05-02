@@ -10,7 +10,7 @@ class LocalGraphQLClient {
     final HttpLink _httpLink = HttpLink(config.graphQLEndpoint);
 
     client = GraphQLClient(
-      cache: GraphQLCache(),
+      cache: GraphQLCache(store: InMemoryStore()),
       link: _httpLink,
     );
   }

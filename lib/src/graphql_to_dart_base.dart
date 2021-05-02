@@ -11,15 +11,10 @@ import 'package:graphql_to_dart/src/parsers/config_parser.dart';
 
 class GraphQlToDart {
   final String yamlFilePath;
+
   GraphQlToDart(this.yamlFilePath);
-  static const List<String> ignoreFields = [
-    "rootquerytype",
-    "rootsubscriptiontype",
-    "rootmutationtype",
-    "mutation",
-    "query",
-    "subscription"
-  ];
+
+  static const List<String> ignoreFields = ["rootquerytype", "rootsubscriptiontype", "rootmutationtype", "mutation", "query", "subscription"];
 
   init() async {
     Config config = await ConfigParser.parse(yamlFilePath);
@@ -33,11 +28,18 @@ class GraphQlToDart {
     TypeConverters converters = TypeConverters();
     converters.overrideTypes(config.typeOverride);
     await Future.forEach(schema.types, (Types type) async {
-      if (type.fields != null &&
-          type.inputFields == null &&
-          !type.name.startsWith("__") &&
-          !ignoreFields.contains(type.name?.toLowerCase())) {
+      if (type.fields != null && type.inputFields == null && !type.name.startsWith("__") && !ignoreFields.contains(type.name?.toLowerCase())) {
         print("Creating model from: ${type.name}");
+        TypeBuilder builder = TypeBuilder(type, config);
+        await builder.build();
+      }
+      if (type.kind == 'INPUT_OBJECT' && type.fields == null && type.inputFields != null) {
+        print("Creating input model from: ${type.name}");
+        TypeBuilder builder = TypeBuilder(type, config);
+        await builder.build();
+      }
+      if (type.kind == 'ENUM' && type.fields == null && !type.name.startsWith("__") && type.inputFields == null) {
+        print("Creating enum model from: ${type.name}");
         TypeBuilder builder = TypeBuilder(type, config);
         await builder.build();
       }
