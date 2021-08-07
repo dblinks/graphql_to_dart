@@ -71,13 +71,15 @@ class Types {
 class Fields {
   String description;
   String name;
+  String dbName;
   Type type;
 
-  Fields({this.description, this.name, this.type});
+  Fields({this.description, this.name, this.type, this.dbName});
 
   Fields.fromJson(Map<String, dynamic> json) {
     description = json['description'];
     name = json['name'];
+    dbName = json['dbName'];
     type = json['type'] != null ? Type.fromJson(json['type']) : null;
   }
 
@@ -85,6 +87,7 @@ class Fields {
     final Map<String, dynamic> data = Map<String, dynamic>();
     data['description'] = this.description;
     data['name'] = this.name;
+    data['dbName'] = this.dbName;
     if (this.type != null) {
       data['type'] = this.type.toJson();
     }

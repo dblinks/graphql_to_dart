@@ -28,7 +28,7 @@ class GraphQlToDart {
     TypeConverters converters = TypeConverters();
     converters.overrideTypes(config.typeOverride);
     await Future.forEach(schema.types, (Types type) async {
-      if (type.fields != null && type.inputFields == null && !type.name.startsWith("__") && !ignoreFields.contains(type.name?.toLowerCase())) {
+      if (type.fields != null && type.inputFields == null && !type.name.startsWith("__") && ![...ignoreFields, ...config.ignoreTypes].contains(type.name?.toLowerCase())) {
         print("Creating model from: ${type.name}");
         TypeBuilder builder = TypeBuilder(type, config);
         await builder.build();

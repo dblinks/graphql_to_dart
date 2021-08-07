@@ -5,6 +5,7 @@ import 'package:yaml/yaml.dart';
 
 class Config {
   String graphQLEndpoint;
+
 //  String queriesFilePath;
 //  String mutationsFilePath;
 //  String subscriptionsFilePath;
@@ -12,7 +13,10 @@ class Config {
   String modelsDirectoryPath;
   bool dynamicImportPath;
   YamlMap typeOverride;
+  YamlList ignoreTypes;
+
   Config({this.modelsDirectoryPath});
+
   Config.fromJson(Map map) {
     graphQLEndpoint = map['graphql_endpoint']?.toString();
 //    queriesFilePath = map['queries_file_path']?.toString();
@@ -20,10 +24,11 @@ class Config {
 //    subscriptionsFilePath = map['subscriptions_file_path']?.toString();
     modelsDirectoryPath = map['models_directory_path']?.toString();
     dynamicImportPath = map['dynamic_import_path']?.toString() == 'false' ? false : true;
-
+    ignoreTypes = map['ignore_types'] ?? YamlList();
     packageName = map['package_name'];
     typeOverride = map['type_override'];
   }
+
   Future<ValidationResult> validate() async {
 //    File queriesFile = File(queriesFilePath);
 //    File mutationsFile = File(mutationsFilePath);

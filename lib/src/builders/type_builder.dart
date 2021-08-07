@@ -27,7 +27,6 @@ class TypeBuilder {
     }
     if (type.kind == 'ENUM') {
       _addEnumValues();
-
     } else {
       _addConstructor();
       _addFromJson();
@@ -47,12 +46,9 @@ class TypeBuilder {
     localFields.unique<String>((field) => field.type).forEach((field) {
       if (field.object == true) {
         if (config.dynamicImportPath) {
-          importBuffer.writeln(
-              "import 'package:${config.packageName}/${config.modelsDirectoryPath.replaceAll(r"lib/", "")}/${pascalToSnake(field.type)}.dart';"
-                  .replaceAll(r"//", r"/"));
+          importBuffer.writeln("import 'package:${config.packageName}/${config.modelsDirectoryPath.replaceAll(r"lib/", "")}/${pascalToSnake(field.type)}.dart';".replaceAll(r"//", r"/"));
         } else {
-          importBuffer.writeln("import '${pascalToSnake(field.type)}.dart';"
-              .replaceAll(r"//", r"/"));
+          importBuffer.writeln("import '${pascalToSnake(field.type)}.dart';".replaceAll(r"//", r"/"));
         }
       }
     });
@@ -68,29 +64,24 @@ class TypeBuilder {
     localFields.forEach((field) {
       if (field.list == true) {
         if (field.type == "DateTime") {
-          toJsonBuilder.writeln(
-              "_data['${field.name}'] = List.generate(${field.name}?.length ?? 0, (index)=> ${field.name}[index].toString());");
+          toJsonBuilder.writeln("_data['${field.dbName ?? field.name}'] = List.generate(${field.name}?.length ?? 0, (index)=> ${field.name}[index].toString());");
         } else if (field.object == true) {
-          toJsonBuilder.writeln(
-              "_data['${field.name}'] = List.generate(${field.name}?.length ?? 0, (index)=> ${field.name}[index].toJson());");
+          toJsonBuilder.writeln("_data['${field.dbName ?? field.name}'] = List.generate(${field.name}?.length ?? 0, (index)=> ${field.name}[index].toJson());");
         } else {
-          toJsonBuilder.writeln("_data['${field.name}'] = ${field.name};");
+          toJsonBuilder.writeln("_data['${field.dbName ?? field.name}'] = ${field.name};");
         }
       } else if (field.object == true) {
-        toJsonBuilder
-            .writeln("_data['${field.name}'] = ${field.name}?.toJson();");
+        toJsonBuilder.writeln("_data['${field.dbName ?? field.name}'] = ${field.name}?.toJson();");
       } else if (field.type == "DateTime") {
-        toJsonBuilder
-            .writeln("_data['${field.name}'] = ${field.name}?.toString();");
+        toJsonBuilder.writeln("_data['${field.dbName ?? field.name}'] = ${field.name}?.toString();");
       } else {
-        toJsonBuilder.writeln("_data['${field.name}'] = ${field.name};");
+        toJsonBuilder.writeln("_data['${field.dbName ?? field.name}'] = ${field.name};");
       }
     });
     stringBuffer.writeln();
     toJsonBuilder.writeln("return _data;");
     stringBuffer.writeln();
-    stringBuffer
-        .write(_wrapWith(toJsonBuilder.toString(), "Map toJson(){", "}"));
+    stringBuffer.write(_wrapWith(toJsonBuilder.toString(), "Map toJson(){", "}"));
   }
 
   _addFromJson() {
@@ -98,39 +89,30 @@ class TypeBuilder {
     localFields.forEach((field) {
       if (field.list == true) {
         fromJsonBuilder.write("""
-${field.name} = json['${field.name}']!=null ?
-${field.object == true ?
-        "List.generate(json['${field.name}'].length, (index)=> ${field.type}.fromJson(json['${field.name}'][index]))"
-            : field.type == "DateTime" ?
-        "List.generate(json['${field.name}'].length, (index)=> DateTime.parse(json['${field.name}'][index]))"
-            : "json['${field.name}'].map<${field.type}>((o)=>o.to${field.type}()).toList()"}: null;
+${field.name} = json['${field.dbName ?? field.name}']!=null ?
+${field.object == true ? "List.generate(json['${field.dbName ?? field.name}'].length, (index)=> ${field.type}.fromJson(json['${field.name}'][index]))" : field.type == "DateTime" ? "List.generate(json['${field.name}'].length, (index)=> DateTime.parse(json['${field.name}'][index]))" : "json['${field.name}'].map${field.type != null ? "<${field.type}>" : ""}((o)=>o.to${field.type}()).toList()"}: null;
         """);
-      } else if (field.isEnum){
+      } else if (field.isEnum) {
         // fromJsonBuilder.writeln("${field.name} = json['${field.name}'];");
       } else if (field.object == true) {
-        fromJsonBuilder.writeln(
-            "${field.name} = json['${field.name}']!=null ? ${field.type}.fromJson(json['${field.name}']) : null;");
+        fromJsonBuilder.writeln("${field.name} = json['${field.dbName ?? field.name}']!=null ? ${field.type}.fromJson(json['${field.name}']) : null;");
       } else if (field.type == "DateTime") {
-        fromJsonBuilder.writeln(
-            "${field.name} = json['${field.name}']!=null ? DateTime.parse(json['${field.name}']) : null;");
+        fromJsonBuilder.writeln("${field.name} = json['${field.dbName ?? field.name}']!=null ? DateTime.parse(json['${field.name}']) : null;");
       } else {
-        if(field.type=='double'){
-          fromJsonBuilder.writeln("${field.name} = json['${field.name}']?.toDouble();");
-
-        }else{
-          fromJsonBuilder.writeln("${field.name} = json['${field.name}'];");
+        if (field.type == 'double') {
+          fromJsonBuilder.writeln("${field.name} = json['${field.dbName ?? field.name}']?.toDouble();");
+        } else {
+          fromJsonBuilder.writeln("${field.name} = json['${field.dbName ?? field.name}'];");
         }
       }
     });
     stringBuffer.writeln();
     stringBuffer.writeln();
-    stringBuffer.write(_wrapWith(fromJsonBuilder.toString(),
-        "${type.name}.fromJson(Map<String, dynamic> json){", "}"));
+    stringBuffer.write(_wrapWith(fromJsonBuilder.toString(), "${type.name}.fromJson(Map<String, dynamic> json){", "}"));
   }
 
   _saveToFile() async {
-    File file = File(FileConstants().modelsDirectory.path +
-        "/${pascalToSnake(type.name)}.dart".replaceAll(r"//", r"/"));
+    File file = File(FileConstants().modelsDirectory.path + "/${pascalToSnake(type.name)}.dart".replaceAll(r"//", r"/"));
     if (!(await file.exists())) {
       await file.create();
     }
@@ -140,20 +122,21 @@ ${field.object == true ?
 
   _addFields() {
     type.fields.forEach((field) {
-      _typeOrdering(field.type, field.name);
+      String dbName = field.name.startsWith("_") ? field.name : null;
+      _typeOrdering(field.type, dbName != null ? field.name.substring(1) : field.name, dbName: dbName);
     });
   }
 
   _addInputFields() {
     type.inputFields.forEach((field) {
-      _typeOrdering(field.type, field.name);
+      String dbName = field.name.startsWith("_") ? field.name : null;
+      _typeOrdering(field.type, field.name.startsWith("_") ? field.name.substring(1) : field.name, dbName: dbName);
     });
   }
 
   _addEnumValues() {
     // stringBuffer.writeln("import 'package:flutter/foundation.dart';");
-    stringBuffer
-        .writeln('enum ${type.name}{\n${type.enumValues.map((e) => e.name).join(',\n')}\n}');
+    stringBuffer.writeln('enum ${type.name}{\n${type.enumValues.map((e) => e.name).join(',\n')}\n}');
 //     stringBuffer.writeln('''
 //     extension ${type.name}Index on ${type.name} {
 //   // Overload the [] getter to get the name of the fruit.
@@ -175,11 +158,10 @@ ${field.object == true ?
         constructorBuffer.write(",");
       }
     }
-    stringBuffer.writeln(
-        _wrapWith(constructorBuffer.toString(), "${type.name}({", "});"));
+    stringBuffer.writeln(_wrapWith(constructorBuffer.toString(), "${type.name}({", "});"));
   }
 
-  _typeOrdering(Type type, String fieldName) {
+  _typeOrdering(Type type, String fieldName, {String dbName}) {
     bool list = false;
     LocalField localField;
     if (type.kind == "NON_NULL") {
@@ -192,24 +174,22 @@ ${field.object == true ?
     if (type.kind == "NON_NULL") {
       type = type.ofType;
     }
+    print("${type.name} - ${type.ofType?.name}");
     if (type.kind == scalar) {
-      localField = LocalField(
-          name: fieldName,
-          list: list,
-          type: TypeConverters().nonObjectTypes[type.name.toLowerCase()],
-          object: false);
+      localField = LocalField(name: fieldName, list: list, type: TypeConverters().nonObjectTypes[type.name.toLowerCase()], object: false, dbName: dbName);
       localFields.add(localField);
     } else if (type.kind == 'ENUM') {
       localField = LocalField(
+        dbName: dbName,
         name: fieldName,
         list: list,
         type: TypeConverters().nonObjectTypes['string'],
         object: false,
-        /*isEnum: true*/);
+        /*isEnum: true*/
+      );
       localFields.add(localField);
     } else {
-      localField = LocalField(
-          name: fieldName, list: list, type: type.name, object: true);
+      localField = LocalField(name: fieldName, list: list, type: type.name, object: true, dbName: dbName);
       localFields.add(localField);
     }
     stringBuffer.writeln(localField.toDeclarationStatement());
@@ -227,16 +207,16 @@ ${field.object == true ?
 
 class LocalField {
   final String name;
+  final String dbName;
   final bool list;
   final String type;
   final bool object;
   final bool isEnum;
 
-  LocalField(
-      {this.name, this.list, this.type, this.object, this.isEnum = false});
+  LocalField({this.name, this.list, this.type, this.object, this.isEnum = false, this.dbName});
 
   String toDeclarationStatement() {
-    return "${list ? "List<" : ""}${type ?? "var"}${list ? ">" : ""} $name;";
+    return "${list ? "List${type != null ? "<${type}>" : ""}" : type ?? "var"} $name;";
   }
 
   @override
